@@ -27,7 +27,7 @@ setup(
         'celery_prometheus_exporter',
     ],
     install_requires=[
-        'celery>=3',
+        'celery>3',
         'prometheus_client>=0.0.20',
     ],
     entry_points={

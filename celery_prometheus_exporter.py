@@ -1,6 +1,5 @@
-from __future__ import print_function
 import argparse
-import celery
+from celery import Celery
 import celery.states
 import celery.events
 import collections
@@ -36,13 +35,13 @@ def get_histogram_buckets_from_evn(env_name):
     return buckets
 
 
-DEFAULT_BROKER = os.environ.get('BROKER_URL', 'redis://redis:6379/0')
+DEFAULT_BROKER = os.environ.get('BROKER_URL', 'redis://localhost:6379/0')
 DEFAULT_ADDR = os.environ.get('DEFAULT_ADDR', '0.0.0.0:8888')
 DEFAULT_MAX_TASKS_IN_MEMORY = int(os.environ.get('DEFAULT_MAX_TASKS_IN_MEMORY',
                                                  '10000'))
 RUNTIME_HISTOGRAM_BUCKETS = get_histogram_buckets_from_evn('RUNTIME_HISTOGRAM_BUCKETS')
 LATENCY_HISTOGRAM_BUCKETS = get_histogram_buckets_from_evn('LATENCY_HISTOGRAM_BUCKETS')
-DEFAULT_QUEUE_LIST = os.environ.get('QUEUE_LIST', [])
+DEFAULT_QUEUE_LIST = os.environ.get('QUEUE_LIST', ['celery'])
 
 LOG_FORMAT = '[%(asctime)s] %(name)s:%(levelname)s: %(message)s'
 
@@ -92,14 +91,7 @@ class MonitorThread(threading.Thread):
         with self._state._mutex:
             if celery.events.group_from(evt['type']) == 'task':
                 evt_state = evt['type'][5:]
-                try:
-                    # Celery 4
-                    state = celery.events.state.TASK_EVENT_TO_STATE[evt_state]
-                except AttributeError:  # pragma: no cover
-                    # Celery 3
-                    task = celery.events.state.Task()
-                    task.event(evt_state)
-                    state = task.state
+                state = celery.events.state.TASK_EVENT_TO_STATE[evt_state]
                 if state == celery.states.STARTED:
                     self._observe_latency(evt)
                 self._collect_tasks(evt, state)
@@ -212,7 +204,7 @@ class EnableEventsThread(threading.Thread):
 
 
 class QueueLengthMonitoringThread(threading.Thread):
-    periodicity_seconds = 30
+    periodicity_seconds = 5
 
     def __init__(self, app, queue_list):
         # type: (celery.Celery, [str]) -> None
@@ -337,7 +329,7 @@ def main():  # pragma: no cover
         time.tzset()
 
     logging.info('Setting up celery for {}'.format(opts.broker))
-    app = celery.Celery(broker=opts.broker)
+    app = Celery(broker=opts.broker)
 
     if opts.transport_options:
         try:
