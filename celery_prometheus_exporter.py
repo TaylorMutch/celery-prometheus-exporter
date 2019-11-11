@@ -18,45 +18,38 @@ import amqp.exceptions
 __VERSION__ = (1, 2, 0, 'final', 0)
 
 
-def decode_buckets(buckets_list):
-    return [float(x) for x in buckets_list.split(',')]
-
-
-def get_histogram_buckets_from_evn(env_name):
-    if env_name in os.environ:
-        buckets = decode_buckets(os.environ.get(env_name))
-    else:
-        if hasattr(prometheus_client.Histogram, 'DEFAULT_BUCKETS'): # pragma: no cover
-            buckets = prometheus_client.Histogram.DEFAULT_BUCKETS
-        else: # pragma: no cover
-            # For prometheus-client < 0.3.0 we cannot easily access
-            # the default buckets:
-            buckets = (.005, .01, .025, .05, .075, .1, .25, .5, .75, 1.0, 2.5, 5.0, 7.5, 10.0, float('inf'))
-    return buckets
-
 
 DEFAULT_BROKER = os.environ.get('BROKER_URL', 'redis://localhost:6379/0')
 DEFAULT_ADDR = os.environ.get('DEFAULT_ADDR', '0.0.0.0:8888')
 DEFAULT_MAX_TASKS_IN_MEMORY = int(os.environ.get('DEFAULT_MAX_TASKS_IN_MEMORY',
                                                  '10000'))
-RUNTIME_HISTOGRAM_BUCKETS = get_histogram_buckets_from_evn('RUNTIME_HISTOGRAM_BUCKETS')
-LATENCY_HISTOGRAM_BUCKETS = get_histogram_buckets_from_evn('LATENCY_HISTOGRAM_BUCKETS')
 DEFAULT_QUEUE_LIST = os.environ.get('QUEUE_LIST', ['celery'])
 
 LOG_FORMAT = '[%(asctime)s] %(name)s:%(levelname)s: %(message)s'
 
 TASKS = prometheus_client.Gauge(
-    'celery_tasks', 'Number of tasks per state', ['state'])
+    'celery_tasks',
+    'Number of tasks per state',
+    ['state']
+)
 TASKS_NAME = prometheus_client.Gauge(
-    'celery_tasks_by_name', 'Number of tasks per state and name',
-    ['state', 'name'])
+    'celery_tasks_by_name',
+    'Number of tasks per state and name',
+    ['state', 'name']
+)
 TASKS_RUNTIME = prometheus_client.Histogram(
-    'celery_tasks_runtime_seconds', 'Task runtime (seconds)', ['name'], buckets=RUNTIME_HISTOGRAM_BUCKETS)
+    'celery_tasks_runtime_seconds',
+    'Task runtime (seconds)',
+    ['name']
+)
 WORKERS = prometheus_client.Gauge(
-    'celery_workers', 'Number of alive workers')
+    'celery_workers',
+    'Number of alive workers'
+)
 LATENCY = prometheus_client.Histogram(
-    'celery_task_latency', 'Seconds between a task is received and started.', buckets=LATENCY_HISTOGRAM_BUCKETS)
-
+    'celery_task_latency',
+    'Seconds between a task is received and started.'
+)
 QUEUE_LENGTH = prometheus_client.Gauge(
     'celery_queue_length', 'Number of tasks in the queue.',
     ['queue_name']
