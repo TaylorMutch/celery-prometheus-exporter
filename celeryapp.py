@@ -30,12 +30,18 @@ celery_app.conf.update(
 
 @celery_app.task
 def task1():
+    print("Got task1")
     time.sleep(20)
+    print("Finished task1")
 
 @celery_app.task
 def task2():
+    print("Got task2")
     time.sleep(20)
+    print("Finished task2")
 
 @celery_app.task
 def task3():
+    print("Got task3")
     time.sleep(20)
+    print("Finished task3")
